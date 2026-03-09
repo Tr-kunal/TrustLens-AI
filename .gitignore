@@ -1,2 +1,82 @@
+# ========================
+# Python / Backend
+# ========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+
 # Virtual environment
 venv/
+env/
+.venv/
+
+# Environment variables
+backend/.env
+
+# SQLite database
+*.db
+*.sqlite3
+
+# Uploaded files
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# YOLO model weights (large binary)
+backend/model/*.pt
+*.pt
+
+# YOLO training runs
+runs/
+
+# Frontend (tracked on separate branch)
+frontend/
+frontend/.node_modules
+
+# ML models folder (tracked on separate branch)
+ML models/
+
+# ========================
+# Node / Frontend
+# ========================
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Logs
+*.log
+npm-debug.log*
+
+# ========================
+# IDE / Editor
+# ========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ========================
+# OS / System
+# ========================
+.DS_Store
+Desktop.ini
+$RECYCLE.BIN/
+
+# ========================
+# Misc
+# ========================
+*.zip
+*.tar.gz
+*.rar
+.env.local
+.env.production
+tmp/
+temp/
