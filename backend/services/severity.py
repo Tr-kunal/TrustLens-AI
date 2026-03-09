@@ -1,37 +1,50 @@
+import math
+
+# Class-specific weights — higher weight = more impactful on severity
+CLASS_WEIGHTS = {'crack': 1.0, 'scratch': 0.6, 'stain': 0.4}
+
+
 def calculate_severity(detections: list) -> int:
     """
-    Calculate a severity score (1–10) based on detections.
+    Calculate a severity score (1–10) based on YOLO detections.
 
-    Logic:
-    - More detections → higher severity
-    - Higher confidence → higher severity
-    - Certain damage types are inherently more severe
+    Uses area-weighted scoring from the trained model pipeline:
+    - Each detection's contribution = area_pct × class_weight
+    - Total is normalized using square root scaling for balanced results
+    - Crack has highest weight (1.0), scratch moderate (0.6), stain lowest (0.4)
+
+    Returns:
+        int: severity score from 0 (no damage) to 10 (critical)
     """
     if not detections:
-        return 1
+        return 0
 
-    severe_labels = {"broken_screen", "water_damage", "bent_frame"}
-    moderate_labels = {"crack", "dent"}
-
-    base_score = min(len(detections) * 1.5, 5)
-
-    severity_bonus = 0
-    avg_confidence = 0
+    total_weighted_score = 0
 
     for det in detections:
-        avg_confidence += det.get("confidence", 0.5)
         label = det.get("label", "")
-        if label in severe_labels:
-            severity_bonus += 2.0
-        elif label in moderate_labels:
-            severity_bonus += 1.0
-        else:
-            severity_bonus += 0.5
+        area_pct = det.get("area_pct", 5.0)  # fallback if area not computed
+        weight = CLASS_WEIGHTS.get(label, 0.5)
+        detection_score = area_pct * weight
+        total_weighted_score += detection_score
 
-    avg_confidence /= len(detections)
-    severity_bonus = min(severity_bonus, 4)
+    # Normalize: 100% area × 1.0 weight = 100 → divide by 10 → sqrt → scale
+    raw_score = total_weighted_score / 10
+    severity_score = min(round(math.sqrt(raw_score) * 3.16, 1), 10)
+    severity_score = max(severity_score, 1) if total_weighted_score > 0 else 0
 
-    raw_score = base_score + severity_bonus + (avg_confidence * 1.5)
-    final_score = max(1, min(10, round(raw_score)))
+    return int(round(severity_score))
 
-    return final_score
+
+def get_condition_label(severity: int) -> str:
+    """Get human-readable condition label from severity score."""
+    if severity == 0:
+        return "Good"
+    elif severity <= 2:
+        return "Minor Damage"
+    elif severity <= 4:
+        return "Moderate Damage"
+    elif severity <= 7:
+        return "Severe Damage"
+    else:
+        return "Critical Damage"
