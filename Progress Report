@@ -1,0 +1,215 @@
+# TrustLens AI — Progress Report
+**Date:** March 9, 2026 &nbsp;|&nbsp; **Project:** AI-Powered Product Condition Verification Platform
+
+---
+
+## 1. Project Overview
+
+TrustLens AI is a full-stack web application that allows users to upload product images and receive a comprehensive AI-powered condition verification report — including damage detection, severity scoring, price recommendation, and a human-readable explanation.
+
+**Use case:** Enabling transparent, trust-based transactions in the second-hand/refurbished product marketplace by providing objective, AI-driven product condition assessments.
+
+---
+
+## 2. Tech Stack
+
+| Layer | Technology | Status |
+|-------|-----------|--------|
+| Frontend | React 18 + Vite + Tailwind CSS | ✅ Complete |
+| Backend | FastAPI + SQLAlchemy ORM | ✅ Complete |
+| Database | Supabase PostgreSQL (production) | ✅ Connected |
+| Authentication | JWT (access + refresh tokens) + bcrypt | ✅ Complete |
+| Object Detection | YOLOv8n (Ultralytics) — custom trained | ✅ Integrated |
+| Severity Scoring | Area-weighted class scoring | ✅ Complete |
+| LLM Explanation | Class-specific damage explanation generator | ✅ Complete |
+| Storage | Local filesystem → S3/Supabase Bucket | ⏳ Planned |
+
+---
+
+## 3. Architecture
+
+```mermaid
+graph LR
+    A[React Frontend] -->|Axios + JWT| B[FastAPI Backend]
+    B --> C[YOLOv8 Detection]
+    B --> D[Severity Scoring]
+    B --> E[Price Recommendation]
+    B --> F[Explanation Generator]
+    B --> G[(Supabase PostgreSQL)]
+    B --> H[File Storage]
+```
+
+**API Endpoints (8 total):**
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| POST | `/auth/signup` | User registration |
+| POST | `/auth/login` | Authentication |
+| POST | `/auth/logout` | Session end |
+| GET | `/auth/me` | User profile |
+| POST | `/upload` | Image upload (1–5) |
+| POST | `/analyze` | Full AI pipeline |
+| GET | `/reports` | Report history |
+| GET | `/report/{id}` | Single report |
+
+---
+
+## 4. Work Completed ✅
+
+### Backend (FastAPI)
+- ✅ Project scaffolding with clean architecture (`routes/`, `services/`, `models/`, `schemas/`)
+- ✅ SQLAlchemy database models: `users`, `reports`, `images`
+- ✅ JWT authentication: signup, login, logout, protected routes, password hashing
+- ✅ Image upload endpoint with file type/count validation
+- ✅ Full analysis pipeline: upload → detect → score → price → explain → save
+- ✅ Report CRUD (single report + full user history)
+- ✅ CORS, environment variable support, static file serving
+
+### Frontend (React + Tailwind)
+- ✅ 6 fully designed pages: Landing, Signup, Login, Dashboard, Upload, Analysis Result
+- ✅ JWT auth context with auto-redirect on expiry
+- ✅ Drag-and-drop image upload with previews
+- ✅ Canvas-drawn bounding box visualization
+- ✅ Responsive glassmorphism UI with gradient branding
+
+### AI / ML Pipeline
+- ✅ **YOLOv8 model integrated** — Custom-trained on 4 classes (crack, good, scratch, stain)
+- ✅ **Area-weighted severity scoring** — Class weights: crack=1.0, scratch=0.6, stain=0.4
+- ✅ **Price recommendation engine** — 5 discount tiers (0%/10%/25%/40%/55%)
+- ✅ **Explanation generator** — Class-specific damage descriptions with resale recommendations
+- ✅ Graceful fallback to placeholder when model weights not available
+
+### Database & Infrastructure
+- ✅ **Supabase PostgreSQL** connected for production
+- ✅ `psycopg2-binary` driver installed
+- ✅ Comprehensive `.gitignore` (Python, Node, model weights, uploads, IDE, OS)
+- ✅ Git repository with branch management (main, BackEnd-Kunal)
+- ✅ README with setup, API reference, env vars, deployment instructions
+
+### Bug Fixes
+- ✅ JWT `sub` claim string type compatibility (python-jose)
+- ✅ Supabase connection URL password bracket fix
+
+---
+
+## 5. Current Status
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Backend API | ✅ Running | All 8 endpoints functional |
+| Frontend UI | ✅ Running | 6 pages, auth, responsive |
+| Supabase DB | ✅ Connected | PostgreSQL in production |
+| YOLOv8 Integration | ✅ Code complete | Awaiting `best_v2.pt` model file placement |
+| End-to-end flow | ✅ Working | Signup → Upload → Analyze → Dashboard |
+| GitHub repo | ✅ Pushed | main branch synced |
+
+---
+
+## 6. Remaining Work ⏳
+
+### Medium Priority
+| Task | Effort | Description |
+|------|--------|-------------|
+| Admin dashboard | 2 days | Admin-only routes, user management |
+| Report PDF export | 1 day | Downloadable PDF reports |
+| LLM API integration | 1 day | Optional: OpenAI/Gemini for richer explanations |
+
+### Low Priority
+| Task | Effort | Description |
+|------|--------|-------------|
+| Unit & integration tests | 2 days | pytest + Vitest |
+| Docker containerization | 0.5 day | Dockerfiles |
+| CI/CD pipeline | 1 day | GitHub Actions |
+| Rate limiting & logging | 0.5 day | Production hardening |
+
+---
+
+## 7. Challenges & Resolutions
+
+| Challenge | Resolution |
+|-----------|------------|
+| JWT `sub` claim type mismatch | `python-jose` requires string `sub`; converted user ID to/from string |
+| Supabase password brackets | Removed `[` `]` from connection string password |
+| passlib + bcrypt 4.x compatibility | Tested and confirmed working |
+| Git merge conflicts | Resolved via force push after branch merge |
+| CORS configuration | Configured for dev + production origins |
+
+---
+
+## 8. Project File Structure
+
+```
+TrustLensAI/
+├── backend/
+│   ├── main.py                  # App entry, CORS, routers
+│   ├── config.py                # Env vars
+│   ├── database.py              # SQLAlchemy → Supabase PostgreSQL
+│   ├── model/
+│   │   └── best_v2.pt           # Trained YOLOv8 weights
+│   ├── models/                  # DB models (user, report, image)
+│   ├── schemas/                 # Pydantic schemas
+│   ├── routes/                  # API endpoints
+│   │   ├── auth.py              # signup, login, logout, me
+│   │   ├── upload.py            # image upload
+│   │   ├── analyze.py           # AI analysis pipeline
+│   │   └── reports.py           # report history
+│   ├── services/                # Business logic
+│   │   ├── auth.py              # JWT + bcrypt
+│   │   ├── yolo.py              # Real YOLOv8 inference
+│   │   ├── severity.py          # Area-weighted scoring
+│   │   ├── pricing.py           # Price recommendation
+│   │   ├── llm.py               # Explanation generator
+│   │   └── storage.py           # File upload handler
+│   └── uploads/
+│
+├── frontend/
+│   └── src/
+│       ├── api/axios.js         # Axios + JWT interceptors
+│       ├── context/AuthContext   # Auth state
+│       ├── components/          # Navbar, ProtectedRoute, Spinner
+│       └── pages/               # 6 pages (Landing → Result)
+│
+├── ML models/
+│   ├── YOLOv8_Model/            # Training notebook (Colab)
+│   ├── merged_dataset/          # Dataset config (data.yaml)
+│   ├── merge.py                 # Dataset merge script
+│   └── add_crack.py             # Crack dataset addition
+│
+└── README.md
+```
+
+---
+
+## 9. Timeline
+
+```mermaid
+gantt
+    title TrustLens AI Roadmap
+    dateFormat YYYY-MM-DD
+    section Completed
+    Backend development       :done, 2026-03-02, 1d
+    Frontend development      :done, 2026-03-02, 1d
+    Auth & bug fixes          :done, 2026-03-02, 2026-03-07
+    ML model integration      :done, 2026-03-09, 1d
+    Supabase PostgreSQL       :done, 2026-03-09, 1d
+    section Upcoming
+    Model weights deployment  :2026-03-10, 1d
+    Cloud storage             :2026-03-10, 1d
+    Testing & deployment      :2026-03-12, 3d
+```
+
+---
+
+## 10. Demo Access
+
+| Service | URL |
+|---------|-----|
+| Frontend | `http://localhost:5173` |
+| Backend API | `http://localhost:8000` |
+| API Docs (Swagger) | `http://localhost:8000/docs` |
+| GitHub | `https://github.com/Tr-kunal/TrustLens-AI` |
+
+---
+
+**Prepared by:** TrustLens AI Development Team  
+**Date:** March 9, 2026
