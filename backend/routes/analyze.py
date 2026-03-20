@@ -10,6 +10,7 @@ from services.yolo import run_yolo
 from services.severity import calculate_severity
 from services.pricing import recommend_price
 from services.llm import generate_explanation
+from services.storage import url_to_local_path 
 
 router = APIRouter(tags=["Analysis"])
 
@@ -22,11 +23,12 @@ def analyze_images(
 ):
     """
     Run the full AI analysis pipeline on uploaded images:
-    1. YOLOv8 damage detection
-    2. Severity scoring
-    3. Price recommendation
-    4. LLM explanation generation
-    5. Save report to database
+    1. Resolve each image URL → local file path on disk
+    2. Forward image to HuggingFace Space for YOLOv8 detection
+    3. Severity scoring
+    4. Price recommendation
+    5. Explanation generation
+    6. Save report to database
     """
     if not request.image_urls:
         raise HTTPException(
@@ -40,22 +42,23 @@ def analyze_images(
             detail="Base price must be a positive number"
         )
 
-    # Step 1: Run YOLO detection on each image
+    # Step 1 + 2: Resolve each URL to a local file path, then run YOLO via HF Space
     all_detections = []
     for url in request.image_urls:
-        detections = run_yolo(url)
+        local_path = url_to_local_path(url)
+        detections = run_yolo(local_path)
         all_detections.extend(detections)
 
-    # Step 2: Calculate severity
+    # Step 3: Calculate severity
     severity = calculate_severity(all_detections)
 
-    # Step 3: Price recommendation
+    # Step 4: Price recommendation
     recommended = recommend_price(request.base_price, severity)
 
-    # Step 4: Generate explanation
+    # Step 5: Generate explanation
     explanation = generate_explanation(all_detections, severity)
 
-    # Step 5: Save report to database
+    # Step 6: Save report to database
     report = Report(
         user_id=current_user.id,
         base_price=request.base_price,

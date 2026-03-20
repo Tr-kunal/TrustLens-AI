@@ -1,14 +1,16 @@
 import axios from 'axios'
 
-const API_BASE_URL = 'http://localhost:8000'
+// In development (npm run dev):  falls back to http://localhost:8000
+// In production (Vercel):        uses VITE_API_BASE_URL from .env.production
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 
 const api = axios.create({
     baseURL: API_BASE_URL,
+    timeout: 90000,  // 90s — covers Render free tier cold start delay
     headers: {
         'Content-Type': 'application/json',
     },
 })
-
 // Request interceptor: attach JWT token
 api.interceptors.request.use(
     (config) => {
