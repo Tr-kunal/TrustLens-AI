@@ -142,8 +142,8 @@ npm run dev
 
 | Service      | URL                        |
 | ------------ | -------------------------- |
-| Frontend     | http://localhost:5173      |
-| Backend API  | http://localhost:8000      |
+| Frontend     | https://trustlens-ai-xi.vercel.app/      |
+| Backend API  | https://trustlens-ai-cqk8.onrender.com   |
 | Swagger Docs | http://localhost:8000/docs |
 
 ---
@@ -230,10 +230,4 @@ gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
 ```bash
 npm run build
 # Serve dist/ with Nginx, Vercel, or Netlify
-```
-
-### PostgreSQL (Production)
-
-```env
-DATABASE_URL=postgresql://user:password@host:5432/trustlens
 ```
