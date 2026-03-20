@@ -33,13 +33,6 @@ backend/model/*.pt
 # YOLO training runs
 runs/
 
-# Frontend (tracked on separate branch)
-frontend/
-frontend/.node_modules
-
-# ML models folder (tracked on separate branch)
-ML models/
-
 # ========================
 # Node / Frontend
 # ========================
