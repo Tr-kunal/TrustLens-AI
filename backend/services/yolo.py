@@ -1,68 +1,94 @@
+"""
+TrustLens AI — YOLO service (production version)
+
+Calls the HuggingFace Space microservice instead of loading
+best_v2.pt locally (which would crash Render free tier).
+
+Environment variable needed:
+  HF_SPACE_URL = https://yourusername-trustlens-yolo.hf.space
+"""
+
 import os
-import math
 import logging
-from typing import Optional
-from config import UPLOAD_DIR
+
+import httpx
 
 logger = logging.getLogger(__name__)
 
-# --- Model Configuration ---
-MODEL_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "model", "best_v2.pt")
-CLASS_NAMES = ['crack', 'good', 'scratch', 'stain']
-CLASS_WEIGHTS = {'crack': 1.0, 'scratch': 0.6, 'stain': 0.4}
-
-# --- YOLO Model Loading ---
-_model = None
+# Set in Render environment variables after deploying HF Space
+HF_SPACE_URL = os.getenv("HF_SPACE_URL", "")
 
 
-def _load_model():
-    """Load the YOLOv8 model (lazy initialization)."""
-    global _model
-    if _model is not None:
-        return _model
+def run_yolo(image_path: str) -> list:
+    """
+    Run YOLOv8 damage detection by forwarding the image to the HuggingFace Space.
 
-    if not os.path.exists(MODEL_PATH):
-        logger.warning(
-            f"⚠️  Model file not found at: {MODEL_PATH}\n"
-            f"   Place your trained 'best_v2.pt' in: {os.path.dirname(MODEL_PATH)}/\n"
-            f"   Falling back to placeholder detections."
-        )
-        return None
+    Args:
+        image_path: local filesystem path to the uploaded image
+                    (resolved from URL by url_to_local_path in storage.py)
+
+    Returns:
+        list of dicts: [{"label": str, "confidence": float,
+                         "bbox": [x1,y1,x2,y2], "area_pct": float}, ...]
+    """
+    if not HF_SPACE_URL:
+        logger.warning("HF_SPACE_URL not set — using placeholder detections")
+        return _placeholder_detections()
+
+    if not os.path.exists(image_path):
+        logger.warning(f"Image not found: {image_path} — using placeholder detections")
+        return _placeholder_detections()
 
     try:
-        from ultralytics import YOLO
-        _model = YOLO(MODEL_PATH)
-        logger.info(f"✅ YOLOv8 model loaded from: {MODEL_PATH}")
-        return _model
-    except ImportError:
-        logger.warning("⚠️  'ultralytics' package not installed. Run: pip install ultralytics")
-        return None
-    except Exception as e:
-        logger.error(f"❌ Failed to load YOLO model: {e}")
-        return None
+        predict_url = HF_SPACE_URL.rstrip("/") + "/predict"
 
+        with open(image_path, "rb") as f:
+            file_content = f.read()
 
-def _get_local_path(image_url: str) -> Optional[str]:
-    """Convert an image URL to a local file path."""
-    # If it's a URL pointing to our uploads folder
-    if "/uploads/" in image_url:
-        filename = image_url.split("/uploads/")[-1]
-        local_path = os.path.join(UPLOAD_DIR, filename)
-        if os.path.exists(local_path):
-            return local_path
-    # If it's already a local path
-    if os.path.exists(image_url):
-        return image_url
-    return None
+        filename = os.path.basename(image_path)
+        ext = os.path.splitext(filename)[1].lower()
+        mime_map = {
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".png": "image/png",
+            ".webp": "image/webp",
+            ".bmp": "image/bmp",
+        }
+        mime = mime_map.get(ext, "image/jpeg")
+
+        # 120 second timeout to survive HF Space cold starts
+        with httpx.Client(timeout=120.0) as client:
+            response = client.post(
+                predict_url,
+                files={"file": (filename, file_content, mime)},
+            )
+            response.raise_for_status()
+
+        detections = response.json()
+        logger.info(f"HF Space returned {len(detections)} detection(s) for {filename}")
+        return detections
+
+    except httpx.TimeoutException:
+        logger.error("HF Space timed out (cold start?) — using placeholder detections")
+        return _placeholder_detections()
+    except httpx.HTTPStatusError as exc:
+        logger.error(f"HF Space HTTP {exc.response.status_code}: {exc.response.text}")
+        return _placeholder_detections()
+    except Exception as exc:
+        logger.error(f"Unexpected error calling HF Space: {exc}")
+        return _placeholder_detections()
 
 
 def _placeholder_detections() -> list:
-    """Fallback placeholder when model is not available."""
+    """
+    Fallback when HF Space is unavailable.
+    Returns random-looking but realistic detections so the app
+    doesn't crash — user still gets a report, just with fake damage data.
+    """
     import random
     damage_types = ["crack", "scratch", "stain"]
-    num_detections = random.randint(1, 3)
     detections = []
-    for _ in range(num_detections):
+    for _ in range(random.randint(1, 3)):
         label = random.choice(damage_types)
         confidence = round(random.uniform(0.65, 0.99), 2)
         x1 = random.randint(20, 200)
@@ -76,65 +102,3 @@ def _placeholder_detections() -> list:
             "area_pct": round(random.uniform(2.0, 35.0), 2),
         })
     return detections
-
-
-def run_yolo(image_path: str) -> list:
-    """
-    Run YOLOv8 damage detection on an image.
-
-    Uses the real trained model (best_v2.pt) if available,
-    otherwise falls back to placeholder detections.
-
-    Returns a list of detections, each with:
-      - label: damage type (crack, scratch, stain, good)
-      - confidence: detection confidence (0-1)
-      - bbox: [x1, y1, x2, y2] bounding box coordinates
-      - area_pct: percentage of image area covered by detection
-    """
-    model = _load_model()
-
-    if model is None:
-        logger.info("Using placeholder detections (model not loaded)")
-        return _placeholder_detections()
-
-    # Resolve image path
-    local_path = _get_local_path(image_path)
-    if local_path is None:
-        logger.warning(f"Image file not found: {image_path}, using placeholder")
-        return _placeholder_detections()
-
-    try:
-        results = model(local_path, verbose=False)[0]
-        img_h, img_w = results.orig_shape
-        img_area = img_h * img_w
-
-        if len(results.boxes) == 0:
-            return []
-
-        detections = []
-        for box in results.boxes:
-            class_id = int(box.cls)
-            class_name = model.names[class_id]
-
-            # Skip "good" class — it's not damage
-            if class_name == "good":
-                continue
-
-            confidence = round(float(box.conf), 2)
-            x1, y1, x2, y2 = [round(v) for v in box.xyxy[0].tolist()]
-            box_area = (x2 - x1) * (y2 - y1)
-            area_pct = round((box_area / img_area) * 100, 2)
-
-            detections.append({
-                "label": class_name,
-                "confidence": confidence,
-                "bbox": [x1, y1, x2, y2],
-                "area_pct": area_pct,
-            })
-
-        logger.info(f"Detected {len(detections)} damage(s) in {os.path.basename(local_path)}")
-        return detections
-
-    except Exception as e:
-        logger.error(f"YOLO inference error: {e}")
-        return _placeholder_detections()
