@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from supabase import Client
+from postgrest.exceptions import APIError
 from database import get_db
-from models.user import User
 from schemas.auth import SignupRequest, LoginRequest, TokenResponse, UserResponse
 from services.auth import hash_password, verify_password, create_access_token, create_refresh_token, get_current_user
 
@@ -9,43 +9,66 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
 @router.post("/signup", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
-def signup(request: SignupRequest, db: Session = Depends(get_db)):
+def signup(request: SignupRequest, db: Client = Depends(get_db)):
     """Register a new user account."""
-    existing = db.query(User).filter(User.email == request.email).first()
-    if existing:
+    user_data = {
+        "name": request.name,
+        "email": request.email,
+        "password_hash": hash_password(request.password),
+        "role": "user"
+    }
+
+    try:
+        result = db.table("users").insert(user_data).execute()
+    except APIError as e:
+        if e.code == "23505":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already registered"
+            )
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Database error: {str(e)}"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create user: {str(e)}"
         )
 
-    user = User(
-        name=request.name,
-        email=request.email,
-        password_hash=hash_password(request.password),
-        role="user"
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
+    if not result.data:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create user"
+        )
 
-    access_token = create_access_token(data={"sub": user.id})
-    refresh_token = create_refresh_token(data={"sub": user.id})
+    user = result.data[0]
+    access_token = create_access_token(data={"sub": user["id"]})
+    refresh_token = create_refresh_token(data={"sub": user["id"]})
 
     return TokenResponse(access_token=access_token, refresh_token=refresh_token)
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(request: LoginRequest, db: Session = Depends(get_db)):
+def login(request: LoginRequest, db: Client = Depends(get_db)):
     """Authenticate user and return JWT tokens."""
-    user = db.query(User).filter(User.email == request.email).first()
-    if not user or not verify_password(request.password, user.password_hash):
+    result = db.table("users").select("*").eq("email", request.email).execute()
+
+    if not result.data:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password"
         )
 
-    access_token = create_access_token(data={"sub": user.id})
-    refresh_token = create_refresh_token(data={"sub": user.id})
+    user = result.data[0]
+    if not verify_password(request.password, user["password_hash"]):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password"
+        )
+
+    access_token = create_access_token(data={"sub": user["id"]})
+    refresh_token = create_refresh_token(data={"sub": user["id"]})
 
     return TokenResponse(access_token=access_token, refresh_token=refresh_token)
 
@@ -60,6 +83,6 @@ def logout():
 
 
 @router.get("/me", response_model=UserResponse)
-def get_me(current_user: User = Depends(get_current_user)):
+def get_me(current_user: dict = Depends(get_current_user)):
     """Get current authenticated user's profile."""
     return current_user

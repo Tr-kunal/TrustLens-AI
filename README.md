@@ -1,67 +1,67 @@
-# TrustLens AI
+# 🛡️ TrustLens AI
 
 **AI-Powered Product Condition Verification Platform**
 
-Upload product images and receive instant damage detection, severity scoring, price recommendations, and AI-generated explanations.
+Upload product images and receive instant damage detection, severity scoring, price recommendations, and AI-generated explanations — powered by a custom-trained YOLOv8 model.
 
-![Tech Stack](https://img.shields.io/badge/React-18-blue) ![FastAPI](https://img.shields.io/badge/FastAPI-0.104-green) ![Tailwind](https://img.shields.io/badge/TailwindCSS-3.4-cyan) ![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0-red)
+![Tech Stack](https://img.shields.io/badge/React-18-blue) ![FastAPI](https://img.shields.io/badge/FastAPI-0.104-green) ![Tailwind](https://img.shields.io/badge/TailwindCSS-3.4-cyan) ![YOLOv8](https://img.shields.io/badge/YOLOv8-Ultralytics-purple) ![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-emerald)
 
 ---
 
-## Features
+## ✨ Features
 
-- 🔍 **YOLOv8 Damage Detection** — Detects cracks, scratches, dents, and more (placeholder, ready for real model)
-- 📊 **Severity Scoring** — AI-computed 1–10 damage score
-- 💰 **Price Recommendation** — Rule-based pricing engine adjusts value based on condition
-- 📝 **AI Explanation** — Human-readable damage summary (LLM placeholder)
+- 🔍 **YOLOv8 Damage Detection** — Custom-trained model detecting **cracks, scratches, and stains**
+- 📊 **Area-Weighted Severity Scoring** — Scores 0–10 using damage area % and class-specific weights
+- 💰 **Price Recommendation** — Rule-based pricing engine with 5 discount tiers
+- 📝 **AI Explanation** — Class-specific damage descriptions with resale recommendations
 - 🔐 **JWT Authentication** — Secure signup, login, and protected routes
-- 📂 **Report History** — All past analyses saved and accessible
+- 📂 **Report History** — All analyses saved and accessible from dashboard
 - 🖼️ **Bounding Box Visualization** — Canvas-rendered detection overlays on images
+- 🛡️ **Robust Error Handling** — Sanitized client responses, server-side logging, and compensating transactions
 
 ---
 
-## Tech Stack
+## 🛠️ Tech Stack
 
-| Layer      | Technology                     |
-|------------|--------------------------------|
-| Frontend   | React 18 + Vite + Tailwind CSS |
-| Backend    | FastAPI + SQLAlchemy           |
-| Database   | SQLite (dev) / PostgreSQL      |
-| Auth       | JWT (access + refresh tokens)  |
-| Storage    | Local filesystem (pluggable)   |
+| Layer    | Technology                                  |
+| -------- | ------------------------------------------- |
+| Frontend | React 18 + Vite + Tailwind CSS              |
+| Backend  | FastAPI + Supabase REST API                 |
+| ML Model | YOLOv8n (Ultralytics) — 4 classes          |
+| Database | Supabase (PostgreSQL)                       |
+| Auth     | JWT (access + refresh tokens) + bcrypt      |
+| Storage  | Local filesystem (pluggable to S3/Supabase) |
 
 ---
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 TrustLensAI/
 ├── backend/
-│   ├── main.py              # FastAPI entry point
-│   ├── config.py             # Environment config
-│   ├── database.py           # SQLAlchemy setup
-│   ├── .env                  # Environment variables
+│   ├── main.py                  # FastAPI entry point
+│   ├── config.py                # Environment config (validated at startup)
+│   ├── database.py              # Supabase client setup
+│   ├── .env                     # Environment variables
 │   ├── requirements.txt
-│   ├── models/               # SQLAlchemy models
-│   │   ├── user.py
-│   │   ├── report.py
-│   │   └── image.py
-│   ├── schemas/              # Pydantic schemas
+│   ├── model/
+│   │   └── best_v2.pt           # Trained YOLOv8 weights
+│   ├── schemas/                 # Pydantic schemas
 │   │   ├── auth.py
 │   │   └── report.py
-│   ├── routes/               # API endpoints
-│   │   ├── auth.py
-│   │   ├── upload.py
-│   │   ├── analyze.py
-│   │   └── reports.py
-│   ├── services/             # Business logic
-│   │   ├── auth.py
-│   │   ├── yolo.py
-│   │   ├── severity.py
-│   │   ├── pricing.py
-│   │   ├── llm.py
-│   │   └── storage.py
-│   └── uploads/              # Uploaded images
+│   ├── routes/                  # API endpoints
+│   │   ├── auth.py              # signup, login, logout, me
+│   │   ├── upload.py            # image upload (1–5)
+│   │   ├── analyze.py           # full AI pipeline
+│   │   └── reports.py           # report history & detail
+│   ├── services/                # Business logic
+│   │   ├── auth.py              # JWT + bcrypt
+│   │   ├── yolo.py              # YOLOv8 inference
+│   │   ├── severity.py          # Area-weighted scoring
+│   │   ├── pricing.py           # Price recommendation
+│   │   ├── llm.py               # Explanation generator
+│   │   └── storage.py           # File upload handler
+│   └── uploads/                 # Uploaded images
 │
 ├── frontend/
 │   ├── index.html
@@ -72,7 +72,7 @@ TrustLensAI/
 │       ├── main.jsx
 │       ├── App.jsx
 │       ├── index.css
-│       ├── api/axios.js
+│       ├── api/axios.js         # Axios + JWT interceptors
 │       ├── context/AuthContext.jsx
 │       ├── components/
 │       │   ├── Navbar.jsx
@@ -86,126 +86,176 @@ TrustLensAI/
 │           ├── Upload.jsx
 │           └── AnalysisResult.jsx
 │
+├── Final YOLOv8 Model/          # Model training artifacts
 └── README.md
 ```
 
 ---
 
-## Setup & Installation
+## 🚀 Setup & Installation
 
 ### Prerequisites
 
 - **Python 3.10+**
-- **Node.js 18+** and **npm**
+- **Node.js 18+** and npm
+- **Supabase account** with a project created
 
-### 1. Clone the Repository
-
-```bash
-git clone <repo-url>
-cd TrustLensAI
-```
-
-### 2. Backend Setup
+### 1. Backend Setup
 
 ```bash
 cd backend
 
-# Create virtual environment
+# Create & activate virtual environment
 python -m venv venv
-venv\Scripts\activate        # Windows
-# source venv/bin/activate   # macOS/Linux
+venv\Scripts\activate            # Windows
+# source venv/bin/activate       # macOS/Linux
 
 # Install dependencies
 pip install -r requirements.txt
+pip install ultralytics          # For YOLOv8
 
-# Configure environment
-# Edit .env with your settings (defaults work for development)
+# Configure environment variables (see section below)
+# Copy .env.example to .env and fill in values
 
-# Run the server
+# Place your trained model
+# Copy best_v2.pt to backend/model/best_v2.pt
+
+# Start the server
 uvicorn main:app --reload --port 8000
 ```
 
-The API is now running at **http://localhost:8000**
-- Swagger docs: **http://localhost:8000/docs**
-- Health check: **http://localhost:8000/health**
+> **Note:** Without `best_v2.pt`, the app runs in **placeholder mode** with mock detections.
 
-### 3. Frontend Setup
+> **Important:** The server will **refuse to start** if `SUPABASE_URL` or `SUPABASE_KEY` are missing — this is intentional to prevent silent runtime failures.
+
+### 2. Frontend Setup
 
 ```bash
 cd frontend
-
-# Install dependencies
 npm install
-
-# Start dev server
 npm run dev
 ```
 
-The app is now running at **http://localhost:5173**
+### 3. Access the App
+
+| Service      | URL                        |
+| ------------ | -------------------------- |
+| Frontend     | http://localhost:5173      |
+| Backend API  | http://localhost:8000      |
+| Swagger Docs | http://localhost:8000/docs |
 
 ---
 
-## API Endpoints
+## 🔌 API Endpoints
 
-| Method | Endpoint         | Auth | Description                  |
-|--------|------------------|------|------------------------------|
-| POST   | `/auth/signup`   | ❌   | Register a new user          |
-| POST   | `/auth/login`    | ❌   | Login and get JWT tokens     |
-| POST   | `/auth/logout`   | ❌   | Logout (stateless)           |
-| GET    | `/auth/me`       | ✅   | Get current user profile     |
-| POST   | `/upload`        | ✅   | Upload 1–5 product images   |
-| POST   | `/analyze`       | ✅   | Run AI analysis pipeline     |
-| GET    | `/reports`       | ✅   | Get all reports for user     |
-| GET    | `/report/{id}`   | ✅   | Get specific report          |
-
----
-
-## Environment Variables
-
-| Variable                     | Default                     | Description              |
-|------------------------------|-----------------------------|--------------------------|
-| `DATABASE_URL`               | `sqlite:///./trustlens.db`  | Database connection URL  |
-| `SECRET_KEY`                 | (auto-generated)            | JWT signing secret       |
-| `ALGORITHM`                  | `HS256`                     | JWT algorithm            |
-| `ACCESS_TOKEN_EXPIRE_MINUTES`| `30`                        | Token expiration (min)   |
-| `OPENAI_API_KEY`             | (empty)                     | For real LLM integration |
-| `BACKEND_URL`                | `http://localhost:8000`     | Backend URL for uploads  |
-| `FRONTEND_URL`               | `http://localhost:5173`     | Frontend URL for CORS    |
+| Method | Endpoint         | Auth | Description                        |
+| ------ | ---------------- | ---- | ---------------------------------- |
+| POST   | `/auth/signup` | ❌   | Register new user                  |
+| POST   | `/auth/login`  | ❌   | Login and get JWT                  |
+| POST   | `/auth/logout` | ❌   | Logout (stateless)                 |
+| GET    | `/auth/me`     | ✅   | Current user profile               |
+| POST   | `/upload`      | ✅   | Upload 1–5 product images         |
+| POST   | `/analyze`     | ✅   | Run full AI analysis               |
+| GET    | `/reports`     | ✅   | All reports for user               |
+| GET    | `/report/{id}` | ✅   | Single report detail               |
+| GET    | `/health`      | ❌   | App health check                   |
+| GET    | `/health/db`   | ❌   | DB connectivity (503 if unhealthy) |
 
 ---
 
-## Replacing Placeholders
+## 🤖 AI Pipeline
 
-### YOLOv8
-Replace `backend/services/yolo.py` → `run_yolo()` with actual Ultralytics model loading and inference.
+### Detection → Severity → Price → Explanation
 
-### LLM Explanation
-Replace `backend/services/llm.py` → `generate_explanation()` with OpenAI/Claude API call. Set `OPENAI_API_KEY` in `.env`.
+```
+Image Upload → YOLOv8 Detection → Severity Scoring → Price Recommendation → Explanation
+```
 
-### Storage (S3 / Supabase)
-Replace `backend/services/storage.py` → `save_upload()` with your cloud storage SDK.
+### YOLOv8 Model
 
-### PostgreSQL
-Change `DATABASE_URL` in `.env` to `postgresql://user:pass@host:5432/dbname`.
+- **Architecture:** YOLOv8n (nano) — fast inference
+- **Classes:** `crack` (0), `good` (1), `scratch` (2), `stain` (3)
+- **Training:** 50 epochs, 640×640, batch 16
+- **Dataset:** Merged from per-class datasets (crack, scratch, stain, good)
+
+### Severity Scoring (Area-Weighted)
+
+```
+score = √(total_weighted_score / 10) × 3.16
+```
+
+| Class   | Weight | Impact                       |
+| ------- | ------ | ---------------------------- |
+| Crack   | 1.0    | Highest — structural damage |
+| Scratch | 0.6    | Medium — cosmetic           |
+| Stain   | 0.4    | Lowest — cleanable          |
+
+### Price Recommendation
+
+| Severity | Condition | Discount |
+| -------- | --------- | -------- |
+| 0        | Good      | 0%       |
+| 1–2     | Minor     | 10%      |
+| 3–4     | Moderate  | 25%      |
+| 5–7     | Severe    | 40%      |
+| 8–10    | Critical  | 55%      |
 
 ---
 
-## Deployment
+## ⚙️ Environment Variables
+
+Create a `.env` file in the `backend/` directory:
+
+| Variable                        | Required | Default                   | Description                  |
+| ------------------------------- | -------- | ------------------------- | ---------------------------- |
+| `SUPABASE_URL`                | ✅       | —                        | Supabase project URL         |
+| `SUPABASE_KEY`                | ✅       | —                        | Supabase anon/service key    |
+| `SECRET_KEY`                  | ⚠️     | `fallback-secret-key`   | JWT signing secret           |
+| `ALGORITHM`                   | ❌       | `HS256`                 | JWT algorithm                |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | ❌       | `30`                    | Access token TTL (minutes)   |
+| `REFRESH_TOKEN_EXPIRE_DAYS`   | ❌       | `7`                     | Refresh token TTL (days)     |
+| `BACKEND_URL`                 | ❌       | `http://localhost:8000` | Backend URL for upload paths |
+| `FRONTEND_URL`                | ❌       | `http://localhost:5173` | CORS allowed origin          |
+
+> **⚠️ Warning:** `SECRET_KEY` has a hardcoded fallback for development only. Always set a strong, unique secret in production.
+
+---
+
+## 🛡️ Error Handling & Reliability
+
+The backend implements several layers of defensive error handling:
+
+- **Startup validation** — `SUPABASE_URL` and `SUPABASE_KEY` are validated at import time; missing values crash the server immediately with a clear error message.
+- **Atomic signup** — User registration performs a direct insert and catches the PostgreSQL unique constraint violation (`23505`) instead of a racy select-then-insert pattern. A `UNIQUE` constraint is enforced on `users.email`.
+- **Sanitized error responses** — Internal exception details are logged server-side via Python's `logging` module and never leaked to clients. All error responses use generic messages.
+- **Compensating transactions** — If saving image records fails after a report is created, the orphaned report is automatically deleted. Cleanup failures are logged with the report ID for operator visibility.
+- **Health checks** — The `/health/db` endpoint returns HTTP **503** (not 200) when the database is unreachable, with a consistent response schema.
+- **Database call protection** — All Supabase queries across routes are wrapped in `try/except` blocks with appropriate HTTP status codes (400, 404, 500).
+
+---
+
+## 🚢 Deployment
 
 ### Backend
+
 ```bash
 pip install gunicorn
 gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
 ```
 
 ### Frontend
+
 ```bash
 npm run build
-# Serve the dist/ folder with Nginx, Vercel, Netlify, etc.
+# Serve dist/ with Nginx, Vercel, or Netlify
 ```
 
----
+### Supabase (Production)
 
-## License
+Ensure your Supabase project has the following tables:
 
-MIT
+- `users` — with a `UNIQUE` constraint on `email`
+- `reports` — linked to `users` via `user_id`
+- `images` — linked to `reports` via `report_id`
+
+Set `SUPABASE_URL` and `SUPABASE_KEY` in your production environment variables.

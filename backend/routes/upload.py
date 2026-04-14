@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
 from typing import List
-from models.user import User
 from services.auth import get_current_user
 from services.storage import save_upload
 
@@ -13,7 +12,7 @@ MAX_FILES = 5
 @router.post("/upload")
 async def upload_images(
     files: List[UploadFile] = File(...),
-    current_user: User = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Upload 1–5 product images. Returns list of uploaded image URLs."""
     if len(files) > MAX_FILES:
