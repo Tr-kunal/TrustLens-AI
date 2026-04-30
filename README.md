@@ -10,6 +10,7 @@ Upload product images and receive instant damage detection, severity scoring, pr
 
 ## ✨ Features
 
+- 📱 **Phone Price Prediction** — Upload phone details (Brand, Model, RAM, Storage, Condition) and images for accurate market valuation
 - 🔍 **YOLOv8 Damage Detection** — Custom-trained model detecting **cracks, scratches, and stains**
 - 📊 **Area-Weighted Severity Scoring** — Scores 0–10 using damage area % and class-specific weights
 - 💰 **Price Recommendation** — Rule-based pricing engine with 5 discount tiers
@@ -83,7 +84,7 @@ TrustLensAI/
 │           ├── Signup.jsx
 │           ├── Login.jsx
 │           ├── Dashboard.jsx
-│           ├── Upload.jsx
+│           ├── PhonePrediction.jsx
 │           └── AnalysisResult.jsx
 │
 ├── Final YOLOv8 Model/          # Model training artifacts
