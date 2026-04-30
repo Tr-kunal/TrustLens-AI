@@ -8,6 +8,14 @@ Upload product images and receive instant damage detection, severity scoring, pr
 
 ---
 
+## 🌐 Live Demo
+
+- **Frontend (Vercel):** [https://trustlens-ai-delta.vercel.app](https://trustlens-ai-delta.vercel.app)
+- **Backend API (Render):** [https://trustlens-ai-ia11.onrender.com](https://trustlens-ai-ia11.onrender.com)
+- **API Documentation (Swagger):** [https://trustlens-ai-ia11.onrender.com/docs](https://trustlens-ai-ia11.onrender.com/docs)
+
+---
+
 ## ✨ Features
 
 - 📱 **Phone Price Prediction** — Upload phone details (Brand, Model, RAM, Storage, Condition) and images for accurate market valuation
@@ -137,7 +145,7 @@ npm install
 npm run dev
 ```
 
-### 3. Access the App
+### 3. Access the App (Local Development)
 
 | Service      | URL                        |
 | ------------ | -------------------------- |
