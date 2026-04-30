@@ -1,7 +1,7 @@
 import math
 
 # Class-specific weights — higher weight = more impactful on severity
-CLASS_WEIGHTS = {'crack': 1.0, 'scratch': 0.6, 'stain': 0.4}
+CLASS_WEIGHTS = {'crack': 1.0, 'scratch': 0.6, 'stain': 0.4, 'good': 0.0}
 
 
 def calculate_severity(detections: list) -> int:

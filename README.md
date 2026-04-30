@@ -4,7 +4,7 @@
 
 Upload product images and receive instant damage detection, severity scoring, price recommendations, and AI-generated explanations — powered by a custom-trained YOLOv8 model.
 
-![Tech Stack](https://img.shields.io/badge/React-18-blue) ![FastAPI](https://img.shields.io/badge/FastAPI-0.104-green) ![Tailwind](https://img.shields.io/badge/TailwindCSS-3.4-cyan) ![YOLOv8](https://img.shields.io/badge/YOLOv8-Ultralytics-purple) ![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0-red)
+![Tech Stack](https://img.shields.io/badge/React-18-blue) ![FastAPI](https://img.shields.io/badge/FastAPI-0.104-green) ![Tailwind](https://img.shields.io/badge/TailwindCSS-3.4-cyan) ![YOLOv8](https://img.shields.io/badge/YOLOv8-Ultralytics-purple) ![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-emerald)
 
 ---
 
@@ -17,6 +17,7 @@ Upload product images and receive instant damage detection, severity scoring, pr
 - 🔐 **JWT Authentication** — Secure signup, login, and protected routes
 - 📂 **Report History** — All analyses saved and accessible from dashboard
 - 🖼️ **Bounding Box Visualization** — Canvas-rendered detection overlays on images
+- 🛡️ **Robust Error Handling** — Sanitized client responses, server-side logging, and compensating transactions
 
 ---
 
@@ -25,9 +26,9 @@ Upload product images and receive instant damage detection, severity scoring, pr
 | Layer    | Technology                                  |
 | -------- | ------------------------------------------- |
 | Frontend | React 18 + Vite + Tailwind CSS              |
-| Backend  | FastAPI + SQLAlchemy ORM                    |
+| Backend  | FastAPI + Supabase REST API                 |
 | ML Model | YOLOv8n (Ultralytics) — 4 classes          |
-| Database | SQLite (dev) / PostgreSQL (prod)            |
+| Database | Supabase (PostgreSQL)                       |
 | Auth     | JWT (access + refresh tokens) + bcrypt      |
 | Storage  | Local filesystem (pluggable to S3/Supabase) |
 
@@ -39,16 +40,12 @@ Upload product images and receive instant damage detection, severity scoring, pr
 TrustLensAI/
 ├── backend/
 │   ├── main.py                  # FastAPI entry point
-│   ├── config.py                # Environment config
-│   ├── database.py              # SQLAlchemy setup
+│   ├── config.py                # Environment config (validated at startup)
+│   ├── database.py              # Supabase client setup
 │   ├── .env                     # Environment variables
 │   ├── requirements.txt
 │   ├── model/
 │   │   └── best_v2.pt           # Trained YOLOv8 weights
-│   ├── models/                  # SQLAlchemy models
-│   │   ├── user.py
-│   │   ├── report.py
-│   │   └── image.py
 │   ├── schemas/                 # Pydantic schemas
 │   │   ├── auth.py
 │   │   └── report.py
@@ -89,12 +86,7 @@ TrustLensAI/
 │           ├── Upload.jsx
 │           └── AnalysisResult.jsx
 │
-├── ML models/
-│   ├── YOLOv8_Model/            # Training notebook
-│   ├── merged_dataset/          # Dataset config
-│   ├── merge.py                 # Dataset merge script
-│   └── requirements.txt
-│
+├── Final YOLOv8 Model/          # Model training artifacts
 └── README.md
 ```
 
@@ -106,6 +98,7 @@ TrustLensAI/
 
 - **Python 3.10+**
 - **Node.js 18+** and npm
+- **Supabase account** with a project created
 
 ### 1. Backend Setup
 
@@ -121,6 +114,9 @@ venv\Scripts\activate            # Windows
 pip install -r requirements.txt
 pip install ultralytics          # For YOLOv8
 
+# Configure environment variables (see section below)
+# Copy .env.example to .env and fill in values
+
 # Place your trained model
 # Copy best_v2.pt to backend/model/best_v2.pt
 
@@ -129,6 +125,8 @@ uvicorn main:app --reload --port 8000
 ```
 
 > **Note:** Without `best_v2.pt`, the app runs in **placeholder mode** with mock detections.
+
+> **Important:** The server will **refuse to start** if `SUPABASE_URL` or `SUPABASE_KEY` are missing — this is intentional to prevent silent runtime failures.
 
 ### 2. Frontend Setup
 
@@ -150,16 +148,18 @@ npm run dev
 
 ## 🔌 API Endpoints
 
-| Method | Endpoint         | Auth | Description                |
-| ------ | ---------------- | ---- | -------------------------- |
-| POST   | `/auth/signup` | ❌   | Register new user          |
-| POST   | `/auth/login`  | ❌   | Login and get JWT          |
-| POST   | `/auth/logout` | ❌   | Logout (stateless)         |
-| GET    | `/auth/me`     | ✅   | Current user profile       |
-| POST   | `/upload`      | ✅   | Upload 1–5 product images |
-| POST   | `/analyze`     | ✅   | Run full AI analysis       |
-| GET    | `/reports`     | ✅   | All reports for user       |
-| GET    | `/report/{id}` | ✅   | Single report detail       |
+| Method | Endpoint         | Auth | Description                        |
+| ------ | ---------------- | ---- | ---------------------------------- |
+| POST   | `/auth/signup` | ❌   | Register new user                  |
+| POST   | `/auth/login`  | ❌   | Login and get JWT                  |
+| POST   | `/auth/logout` | ❌   | Logout (stateless)                 |
+| GET    | `/auth/me`     | ✅   | Current user profile               |
+| POST   | `/upload`      | ✅   | Upload 1–5 product images         |
+| POST   | `/analyze`     | ✅   | Run full AI analysis               |
+| GET    | `/reports`     | ✅   | All reports for user               |
+| GET    | `/report/{id}` | ✅   | Single report detail               |
+| GET    | `/health`      | ❌   | App health check                   |
+| GET    | `/health/db`   | ❌   | DB connectivity (503 if unhealthy) |
 
 ---
 
@@ -204,15 +204,33 @@ score = √(total_weighted_score / 10) × 3.16
 
 ## ⚙️ Environment Variables
 
-| Variable                        | Default                      | Description                |
-| ------------------------------- | ---------------------------- | -------------------------- |
-| `DATABASE_URL`                | `sqlite:///./trustlens.db` | DB connection URL          |
-| `SECRET_KEY`                  | (set in .env)                | JWT signing secret         |
-| `ALGORITHM`                   | `HS256`                    | JWT algorithm              |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | `30`                       | Token TTL                  |
-| `OPENAI_API_KEY`              | (empty)                      | For future LLM integration |
-| `BACKEND_URL`                 | `http://localhost:8000`    | Backend URL                |
-| `FRONTEND_URL`                | `http://localhost:5173`    | CORS origin                |
+Create a `.env` file in the `backend/` directory:
+
+| Variable                        | Required | Default                   | Description                  |
+| ------------------------------- | -------- | ------------------------- | ---------------------------- |
+| `SUPABASE_URL`                | ✅       | —                        | Supabase project URL         |
+| `SUPABASE_KEY`                | ✅       | —                        | Supabase anon/service key    |
+| `SECRET_KEY`                  | ⚠️     | `fallback-secret-key`   | JWT signing secret           |
+| `ALGORITHM`                   | ❌       | `HS256`                 | JWT algorithm                |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | ❌       | `30`                    | Access token TTL (minutes)   |
+| `REFRESH_TOKEN_EXPIRE_DAYS`   | ❌       | `7`                     | Refresh token TTL (days)     |
+| `BACKEND_URL`                 | ❌       | `http://localhost:8000` | Backend URL for upload paths |
+| `FRONTEND_URL`                | ❌       | `http://localhost:5173` | CORS allowed origin          |
+
+> **⚠️ Warning:** `SECRET_KEY` has a hardcoded fallback for development only. Always set a strong, unique secret in production.
+
+---
+
+## 🛡️ Error Handling & Reliability
+
+The backend implements several layers of defensive error handling:
+
+- **Startup validation** — `SUPABASE_URL` and `SUPABASE_KEY` are validated at import time; missing values crash the server immediately with a clear error message.
+- **Atomic signup** — User registration performs a direct insert and catches the PostgreSQL unique constraint violation (`23505`) instead of a racy select-then-insert pattern. A `UNIQUE` constraint is enforced on `users.email`.
+- **Sanitized error responses** — Internal exception details are logged server-side via Python's `logging` module and never leaked to clients. All error responses use generic messages.
+- **Compensating transactions** — If saving image records fails after a report is created, the orphaned report is automatically deleted. Cleanup failures are logged with the report ID for operator visibility.
+- **Health checks** — The `/health/db` endpoint returns HTTP **503** (not 200) when the database is unreachable, with a consistent response schema.
+- **Database call protection** — All Supabase queries across routes are wrapped in `try/except` blocks with appropriate HTTP status codes (400, 404, 500).
 
 ---
 
@@ -232,8 +250,12 @@ npm run build
 # Serve dist/ with Nginx, Vercel, or Netlify
 ```
 
-### PostgreSQL (Production)
+### Supabase (Production)
 
-```env
-DATABASE_URL=postgresql://user:password@host:5432/trustlens
-```
+Ensure your Supabase project has the following tables:
+
+- `users` — with a `UNIQUE` constraint on `email`
+- `reports` — linked to `users` via `user_id`
+- `images` — linked to `reports` via `report_id`
+
+Set `SUPABASE_URL` and `SUPABASE_KEY` in your production environment variables.

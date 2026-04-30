@@ -4,9 +4,8 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.orm import Session
+from supabase import Client
 from database import get_db
-from models.user import User
 from config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -40,7 +39,7 @@ def create_refresh_token(data: dict) -> str:
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
+def get_current_user(token: str = Depends(oauth2_scheme), db: Client = Depends(get_db)):
     """Dependency: extract and validate the current user from the JWT token."""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -56,7 +55,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     except JWTError:
         raise credentials_exception
 
-    user = db.query(User).filter(User.id == user_id).first()
-    if user is None:
+    result = db.table("users").select("*").eq("id", user_id).execute()
+    if not result.data:
         raise credentials_exception
-    return user
+    return result.data[0]

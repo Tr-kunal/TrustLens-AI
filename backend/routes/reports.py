@@ -1,9 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from supabase import Client
 from typing import List
 from database import get_db
-from models.user import User
-from models.report import Report
 from schemas.report import ReportResponse
 from services.auth import get_current_user
 
@@ -12,35 +10,51 @@ router = APIRouter(tags=["Reports"])
 
 @router.get("/reports", response_model=List[ReportResponse])
 def get_reports(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Client = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
 ):
     """Fetch all reports for the authenticated user, newest first."""
-    reports = (
-        db.query(Report)
-        .filter(Report.user_id == current_user.id)
-        .order_by(Report.created_at.desc())
-        .all()
-    )
-    return reports
+    try:
+        result = (
+            db.table("reports")
+            .select("*")
+            .eq("user_id", current_user["id"])
+            .order("created_at", desc=True)
+            .execute()
+        )
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch reports"
+        )
+    return result.data
 
 
 @router.get("/report/{report_id}", response_model=ReportResponse)
 def get_report(
     report_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Client = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
 ):
     """Fetch a single report by ID (must belong to the authenticated user)."""
-    report = db.query(Report).filter(
-        Report.id == report_id,
-        Report.user_id == current_user.id
-    ).first()
+    try:
+        result = (
+            db.table("reports")
+            .select("*")
+            .eq("id", report_id)
+            .eq("user_id", current_user["id"])
+            .execute()
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error fetching report: {str(e)}"
+        )
 
-    if not report:
+    if not result.data:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Report not found"
         )
 
-    return report
+    return result.data[0]

@@ -80,7 +80,7 @@ export default function Dashboard() {
                             </p>
                         </div>
                         <Link
-                            to="/upload"
+                            to="/predict"
                             className="flex items-center gap-2 rounded-xl h-12 px-6 bg-white text-[#67829e] font-bold shadow-lg shadow-black/10 hover:scale-[1.02] transition-all w-fit"
                         >
                             <span className="material-symbols-outlined">add_circle</span>
@@ -122,13 +122,13 @@ export default function Dashboard() {
                             <span className="material-symbols-outlined text-4xl text-[#67829e]">lab_profile</span>
                         </div>
                         <h2 className="text-2xl font-bold text-slate-900 mb-2">No reports yet</h2>
-                        <p className="text-slate-500 mb-8 max-w-md mx-auto">Upload product images to generate your first AI analysis report with damage detection, severity scoring, and price recommendations.</p>
+                        <p className="text-slate-500 mb-8 max-w-md mx-auto">Enter phone details and product images to generate a price prediction report.</p>
                         <Link
-                            to="/upload"
+                            to="/predict"
                             className="inline-flex items-center gap-2 rounded-xl h-12 px-8 bg-gradient-to-r from-[#67829e] to-teal-400 text-white font-bold shadow-lg shadow-[#67829e]/20 hover:shadow-[#67829e]/40 transition-all"
                         >
-                            <span className="material-symbols-outlined">cloud_upload</span>
-                            Upload Images
+                            <span className="material-symbols-outlined">query_stats</span>
+                            Predict Price
                         </Link>
                     </div>
                 ) : (

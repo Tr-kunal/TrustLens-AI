@@ -3,7 +3,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./trustlens.db")
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+if not SUPABASE_URL:
+    raise RuntimeError("Missing required environment variable: SUPABASE_URL")
+
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+if not SUPABASE_KEY:
+    raise RuntimeError("Missing required environment variable: SUPABASE_KEY")
 SECRET_KEY = os.getenv("SECRET_KEY", "fallback-secret-key")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))

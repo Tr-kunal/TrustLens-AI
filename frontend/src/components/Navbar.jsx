@@ -43,8 +43,8 @@ export default function Navbar() {
                                     <Link to="/dashboard" className="text-slate-600 text-sm font-medium hover:text-teal-700 transition-colors">
                                         Dashboard
                                     </Link>
-                                    <Link to="/upload" className="text-slate-600 text-sm font-medium hover:text-teal-700 transition-colors">
-                                        Upload
+                                    <Link to="/predict" className="text-slate-600 text-sm font-medium hover:text-teal-700 transition-colors">
+                                        Price Predict
                                     </Link>
                                 </>
                             ) : (
@@ -55,6 +55,9 @@ export default function Navbar() {
                                     <button onClick={() => scrollToSection('workflow')} className="text-slate-600 text-sm font-medium hover:text-teal-700 transition-colors">
                                         Workflow
                                     </button>
+                                    <Link to="/predict" className="text-slate-600 text-sm font-medium hover:text-teal-700 transition-colors">
+                                        Price Predict
+                                    </Link>
                                 </>
                             )}
                         </div>
@@ -115,7 +118,7 @@ export default function Navbar() {
                         {isAuthenticated ? (
                             <div className="flex flex-col gap-3">
                                 <Link to="/dashboard" onClick={() => setMobileOpen(false)} className="text-slate-600 hover:text-teal-700 transition-colors py-2 text-sm font-medium">Dashboard</Link>
-                                <Link to="/upload" onClick={() => setMobileOpen(false)} className="text-slate-600 hover:text-teal-700 transition-colors py-2 text-sm font-medium">Upload</Link>
+                                <Link to="/predict" onClick={() => setMobileOpen(false)} className="text-slate-600 hover:text-teal-700 transition-colors py-2 text-sm font-medium">Price Predict</Link>
                                 <div className="flex items-center gap-3 py-2 border-t border-slate-100 mt-2 pt-4">
                                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-600 to-sky-600 flex items-center justify-center text-xs font-bold text-white">
                                         {user?.name?.charAt(0)?.toUpperCase() || 'U'}
@@ -128,6 +131,7 @@ export default function Navbar() {
                             <div className="flex flex-col gap-3">
                                 <button onClick={() => scrollToSection('features')} className="text-left text-slate-600 hover:text-teal-700 py-2 text-sm font-medium">Features</button>
                                 <button onClick={() => scrollToSection('workflow')} className="text-left text-slate-600 hover:text-teal-700 py-2 text-sm font-medium">Workflow</button>
+                                <Link to="/predict" onClick={() => setMobileOpen(false)} className="text-slate-600 hover:text-teal-700 py-2 text-sm font-medium">Price Predict</Link>
                                 <Link to="/login" onClick={() => setMobileOpen(false)} className="text-slate-600 hover:text-teal-700 py-2 text-sm font-medium">Login</Link>
                                 <Link to="/signup" onClick={() => setMobileOpen(false)} className="flex items-center justify-center rounded-xl h-10 px-4 bg-gradient-to-r from-teal-700 to-sky-700 text-white text-sm font-bold mt-2">Get Started</Link>
                             </div>

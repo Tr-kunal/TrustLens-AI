@@ -7,6 +7,7 @@ class DetectionItem(BaseModel):
     label: str
     confidence: float
     bbox: List[float]
+    area_pct: Optional[float] = None
 
 
 class AnalyzeRequest(BaseModel):

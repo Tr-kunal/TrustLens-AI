@@ -62,7 +62,8 @@ npm-debug.log*
 *~
 .DS_Store
 Thumbs.db
-
+.agents/
+skills-lock.json
 # ========================
 # OS / System
 # ========================
@@ -80,3 +81,7 @@ $RECYCLE.BIN/
 .env.production
 tmp/
 temp/
+skills-lock.json
+skills-log.json
+.agents/
+node_modules

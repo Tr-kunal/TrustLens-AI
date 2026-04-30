@@ -32,6 +32,16 @@ export default {
                     800: '#1e293b',
                     900: '#0f172a',
                     950: '#020617',
+                },
+                cyan: {
+                    400: '#00d4ff',
+                    500: '#00bfe6',
+                    600: '#00a3c4',
+                },
+                surface: {
+                    DEFAULT: '#0a0a0f',
+                    raised: '#12121a',
+                    overlay: '#1a1a25',
                 }
             },
             fontFamily: {
@@ -43,6 +53,8 @@ export default {
                 'slide-down': 'slideDown 0.3s ease-out',
                 'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                 'float': 'float 6s ease-in-out infinite',
+                'glow': 'glow 2s ease-in-out infinite alternate',
+                'shimmer': 'shimmer 2s linear infinite',
             },
             keyframes: {
                 fadeIn: {
@@ -60,6 +72,14 @@ export default {
                 float: {
                     '0%, 100%': { transform: 'translateY(0px)' },
                     '50%': { transform: 'translateY(-20px)' },
+                },
+                glow: {
+                    '0%': { boxShadow: '0 0 20px rgba(0, 212, 255, 0.1)' },
+                    '100%': { boxShadow: '0 0 40px rgba(0, 212, 255, 0.2)' },
+                },
+                shimmer: {
+                    '0%': { backgroundPosition: '-200% 0' },
+                    '100%': { backgroundPosition: '200% 0' },
                 },
             },
             backdropBlur: {

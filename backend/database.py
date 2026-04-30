@@ -1,22 +1,20 @@
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-from config import DATABASE_URL
+from supabase import create_client, Client
+from config import SUPABASE_URL, SUPABASE_KEY
 
-# Handle SQLite-specific connect args
-connect_args = {}
-if DATABASE_URL.startswith("sqlite"):
-    connect_args = {"check_same_thread": False}
-
-engine = create_engine(DATABASE_URL, connect_args=connect_args)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
+# Initialize Supabase client (uses HTTPS — works on any network)
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
-def get_db():
-    """Dependency that provides a database session."""
-    db = SessionLocal()
+def get_db() -> Client:
+    """Dependency that provides the Supabase client."""
+    return supabase
+
+
+def check_db_connection() -> bool:
+    """Test database connectivity via Supabase REST API."""
     try:
-        yield db
-    finally:
-        db.close()
+        result = supabase.table("users").select("id").limit(1).execute()
+        return True
+    except Exception as e:
+        print(f"Database connection failed: {e}")
+        return False
